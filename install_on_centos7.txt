@@ -1,0 +1,39 @@
+sudo yum install -y openssl-devel gzip.x86_64 readline-devel.x86_64 readline-static.x86_64 zlib-static.x86_64 zlib-devel.x86_64 libxslt docbook5-style-xsl docbook-utils gcc bison flex
+wget https://ftp.postgresql.org/pub/source/v9.5.3/postgresql-9.5.3.tar.gz
+tar xzf postgresql-9.5.3.tar.gz
+cd /home/postgresql-9.5.3
+./configure
+make
+sudo make install
+adduser postgres
+passwd postgres
+mkdir /home/pgsql/
+mkdir /home/pgsql/data/
+chown postgres /home/pgsql/data
+echo 'export PATH=/usr/local/pgsql/bin:$PATH' >> ~/.bash_profile
+echo 'export PGDATA=/home/pgsql/data' >> ~/.bash_profile
+. ~/.bash_profile
+initdb -k
+pg_ctl start -l logfile
+pg_ctl stop -m fast
+cd /home/postgresql-9.5.3/contrib/oid2name
+make
+make install
+cd
+firewall-cmd --permanent --add-port=5432/tcp
+firewall-cmd --reload
+sed -ri "s/(#listen_addresses = ).*/\1'*'/" /home/pgsql/data/postgresql.conf
+sed -ri  's/#listen_addresses/listen_addresses/' /home/pgsql/data/postgresql.conf
+sed -i -r 's/host\    all\             all\             127.0.0.1\/32\            trust/host\    all\             all\             all\            md5/' /home/pgsql/data/pg_hba.conf
+
+cd /etc/init.d/
+echo '' >>postgresql #Вставка скрипта
+chmod u+x /etc/init.d/postgresql
+cd /etc/
+echo 'service postgresql start' >>rc.local
+echo 'exit 0' >>rc.local
+chmod +x /etc/rc.d/rc.local
+
+su - postgres
+pg_ctl start -l logfile
+
